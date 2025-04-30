@@ -24,8 +24,8 @@ with open('holder_csv.csv', 'r') as file:
             data_dict[row[1]][1].append(int(row[2]))
 
 counter = 0
-if counter < 1500:
-    for key, value in data_dict.items():
+for key, value in data_dict.items():
+    if counter < 1500:
         if f'{key}.pdb' in os.listdir('pdb_files'):
             structure = parser.get_structure('struct', f'pdb_files/{key}.pdb')
             for model in structure:
