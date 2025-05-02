@@ -1,0 +1,77 @@
+---
+title: "random_forest"
+author: "Jack Shaw"
+date: "2025-05-02"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+__By this point, you should have two sets of phosphosites - positive and negative - so that we can train our random forest classifier. For each phosphosite in both sets, you should have 6 features. Using the scripts on the GitHub, you can produce these features. These features include the number of positively and negatively charged amino acids within 6 Angstroms of the phosphosite, the secondary structure score (custom script I wrote to measure flexibility of phosphosite), and the SASA calculations. You can also modify the calc_pos_neg.py files to calculate the hydrophobic and polar contacts as well (totalling 6 features). To do this, you will need to change the residue names you are neighbor searching for (switch from 'LYS' and 'ARG' or 'ASP' and 'GLU'). Once you have these two dataframes, you can follow this tutorial for creating a random forest classifier.__
+
+__Below, I demonstrate how to train a random forest classifier on a different dataset, but you can use this code (with a few minor changes) to train your own phosphosite predictor! Here, I use k-fold validation (you can look it up and explain why it's useful) and measure my random forest classifier with a Receiver Operating Characteristic (ROC) curve, producing an AUC value. I'd suggest looking up AUC so you can explain how it evaluates your classifier in your write up.__
+
+```{r}
+# If needed, install these packages:
+# install.packages(c("titanic","caret","randomForest","pROC"))
+
+library(titanic)
+library(caret)
+library(randomForest)
+library(pROC)
+
+# predictors + binary outcome
+data("titanic_train", package = "titanic")
+df <- titanic_train[, c("Pclass", "Age", "SibSp", "Parch", "Fare", "Survived")]
+
+# Drop rows with missing values
+df <- na.omit(df)
+
+df$Survived <- factor(df$Survived, levels = c(0,1),
+                      labels = c("No","Yes"))
+
+# Split into pos/neg. This is where you should start after you've read in your positive and negative csvs as dataframes...
+pos_df <- subset(df, Survived == "Yes")
+neg_df <- subset(df, Survived == "No")
+full_df <- rbind(pos_df, neg_df)
+
+# 5‐fold CV
+set.seed(2025)
+folds <- createFolds(full_df$Survived, k = 5, list = TRUE)
+
+roc_list   <- vector("list", length(folds))
+auc_values <- numeric(length(folds))
+
+for(i in seq_along(folds)) {
+  tr <- full_df[-folds[[i]], ]
+  te <- full_df[ folds[[i]], ]
+
+  rf_mod <- randomForest(Survived ~ Pclass + Age + SibSp + Parch + Fare,
+                         data = tr, ntree = 500)
+
+  # extract probability of the “Yes” (survived) class
+  probs <- predict(rf_mod, te, type = "prob")[, "Yes"]
+
+  # encode actual labels as 1 or 0 for AUC
+  actuals <- ifelse(te$Survived == "Yes", 1, 0)
+
+  roc_obj       <- roc(actuals, probs, quiet = TRUE)
+  roc_list[[i]] <- roc_obj
+  auc_values[i] <- auc(roc_obj)
+}
+
+# plot
+plot(roc_list[[1]], col=1, lwd=2, main="Titanic RF 5‐Fold CV ROC")
+for(i in 2:5) plot(roc_list[[i]], add=TRUE, col=i, lwd=2)
+legend("bottomright",
+       legend=paste0("Fold ",1:5," (AUC=",round(auc_values,3),")"),
+       col=1:5, lwd=2, cex=0.8)
+
+# Print results
+print(data.frame(Fold=1:5, AUC=round(auc_values,3)))
+cat("Mean AUC:", round(mean(auc_values),3), "\n")
+
+```
+
