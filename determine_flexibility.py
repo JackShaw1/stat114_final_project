@@ -31,7 +31,7 @@ with open('holder_csv.csv', 'r') as file:
     reader = csv.reader(file)
     for row in reader:
         if row[0] != 'GENE':
-            if f'{row[1}.pdb' in os.listdir('pdb_files'):
+            if f'{row[1]}.pdb' in os.listdir('pdb_files'):
                 structure = parser.get_structure('struct', f'pdb_files/{row[1]}.pdb') 
                 score = determine_ss(structure, int(row[2]))
                 with open('out_with_contacts.csv', 'a', newline='') as outfile:
