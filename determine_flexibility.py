@@ -3,12 +3,6 @@ import os
 from Bio.PDB import PDBParser, NeighborSearch
 
 
-
-
-parser = PDBParser()
-
-structure = parser.get_structure('struct', 'BRCA2_AF.pdb')
-
 def determine_ss(structure, residue_index):
     ns = NeighborSearch(list(structure.get_atoms()))
     for model in structure:
