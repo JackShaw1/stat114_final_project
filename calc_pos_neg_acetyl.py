@@ -14,7 +14,7 @@ with open('holder_csv.csv', 'r') as file:
     reader = csv.reader(file)
     for row in reader:
         if row[0] != 'GENE':
-            if f'{row[1}.pdb' in os.listdir('pdb_files'):
+            if f'{row[1]}.pdb' in os.listdir('pdb_files'):
                 structure = parser.get_structure('struct', f'pdb_files/{row[1]}.pdb') 
                 ns = NeighborSearch(list(structure.get_atoms()))
                 for model in structure:
